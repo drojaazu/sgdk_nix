@@ -1,0 +1,93 @@
+# Build SGDK library to be referenced in projects
+
+# specify SGDK root dir
+SGDK?=/opt/sgdk
+
+# library source directories
+SRC_DIR:=$(SGDK)/src
+RES_DIR:=$(SGDK)/res
+INC_DIR:=$(SGDK)/inc
+
+# m68k toolset
+CC:=m68k-elf-gcc
+OBJCPY:=m68k-elf-objcopy
+
+# z80 toolset
+ASM_Z80=sjasmplus
+
+# SGDK toolset
+RESCOMP:=java -jar $(SGDK)/bin/rescomp.jar
+BINTOS:=$(SGDK)/bin/bintos
+
+# gather code & resources
+SRC_C:=$(wildcard $(SRC_DIR)/*.c)
+SRC_S:=$(wildcard $(SRC_DIR)/*.s)
+SRC_S80:=$(wildcard $(SRC_DIR)/*.s80)
+RES:=$(wildcard $(RES_DIR)/*.res)
+
+# setup output objects
+OBJ:=$(RES:.res=.o)
+OBJ+=$(SRC_S80:.s80=.o)
+OBJ+=$(SRC_S:.s=.o)
+OBJ+=$(SRC_C:.c=.o)
+
+LST:=$(SRC_C:.c=.lst)
+
+# setup includes
+INC:=-I$(INC_DIR) -I$(SRC_DIR) -I$(RES_DIR)
+
+# default flags
+DEF_FLAGS_M68K:=-m68000 -Wall -fno-builtin $(INC)
+DEF_FLAGS_Z80:=-i$(SRC_DIR) -i$(INC_DIR)
+
+release: FLAGS:=$(DEF_FLAGS_M68K) -O3 -fno-web -fno-gcse -fno-unit-at-a-time -fomit-frame-pointer
+release: $(SGDK)/lib/libmd.a
+
+debug: FLAGS:=$(DEF_FLAGS_M68K) -O1 -ggdb -DDEBUG=1
+debug: $(SGDK)/lib/libmd_debug.a
+
+asm: FLAGS:=$(DEF_FLAGS_M68K) -O3 -fno-web -fno-gcse -fno-unit-at-a-time -fomit-frame-pointer -S
+asm: $(LST)
+
+all: release
+default: release
+Default: release
+Release: release
+
+.PHONY: clean
+
+cleanobj:
+	rm -f $(OBJ)
+
+cleanrelease: cleanobj
+	rm -f $(SGDK)/lib/libmd.a
+
+cleandebug: cleanobj
+	rm -f $(SGDK)/lib/libmd_debug.a
+
+clean: cleanobj
+	rm -f $(SGDK)/lib/libmd.a $(SGDK)/lib/libmd_debug.a $(OBJ)
+
+$(SGDK)/lib/libmd.a: $(OBJ)
+	ar rs $(SGDK)/lib/libmd.a $(OBJ)
+
+$(SGDK)/lib/libmd_debug.a: $(OBJ)
+	ar rs $(SGDK)/lib/libmd_debug.a
+
+%.lst: %.c
+	$(CC) $(FLAGS) -c $< -o $@
+
+%.o: %.c
+	$(CC) $(FLAGS) -c $< -o $@
+
+%.o: %.s
+	$(CC) $(FLAGS) -c $< -o $@
+
+%.s: %.res
+	$(RESCOMP) $< $@
+
+%.o80: %.s80
+	$(ASM_Z80) $(DEF_FLAGS_Z80) --lst=out.lst --raw=$@ $<
+	
+%.s: %.o80
+	$(BINTOS) $<
