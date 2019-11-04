@@ -13,12 +13,14 @@ I personally use Arch Linux (btw), so I will be using package names from the Arc
 This project is meant for those who already have a working knowledge of *nix systems. If you're not comfortable or familiar with the console, look into [Gendev](https://github.com/kubilus1/gendev), which is an alternative Linux implementation of SGDK that is a bit more beginner friendly.
 
 ### SGDK
-Clone the project from [the SGDK github repo](https://github.com/Stephane-D/SGDK). You're free to put these files whereever you'd like; /opt/sgdk is a good choice, and is the default location in the makefiles. However, you may want to put it in your home dir temporarily while you work through the initial setup so you're not fighting with permissions/environment var issues, and then move it to opt when you're done. Be sure to `export` SGDK accordingly.
+Clone the project from [the SGDK github repo](https://github.com/Stephan change to ssh keye-D/SGDK). You're free to put these files whereever you'd like; /opt/sgdk is a good choice, and is the default location in the makefiles. However, you may want to put it in your home dir temporarily while you work through the initial setup so you're not fighting with permissions/environment var issues, and then move it to opt when you're done. Be sure to `export` SGDK accordingly.
 
 ### M68000 toolchain
 Package: m68k-elf-binutils and m68k-elf-bootstrap (both on AUR)
 
 You will need cross-architecture tools for compiling/assembling/linking/etc code for the M68000 CPU. If you have to build from source, be sure to include `--target=m68k-elf` when running the configure script for each package. There should be plenty of guides for building these tools on google if needed. (Please also see the note below about libgcc.)
+
+Your M68k toolchain may use a different prefix. For example, Debian uses 'm68k-linux-gnu-' instead of 'm68k-elf-'. In this case, edit the M68K_PREFIX variable inside makefile_lib and makefile_rom, or `export M68K_PREFIX=your-m68k-prefix` before running the makefile.
 
 ### Java 8
 Package: jdk8-openjdk
@@ -31,6 +33,8 @@ TODO: Is Java 8 required? Does this work with newer versions?
 Package: sjasmplus (AUR)
 
 Used for assembling Z80 code. We use sjasmplus instead of vanilla sjasm since newer versions of sjasm complain about the SGDK music driver source.
+
+NOTE: There have been a couple reports that sjasmplus throws errors when using the package from a repo. The solution seems to be [pulling the source directly](https://github.com/z00m128/sjasmplus) and manually building.
 
 ## SGDK tools
 There are a number of tools included with SGDK that will need to be recompiled. Inside the sgdk_tools subdirectory, you will find makefiles to easily compile and install them in your SGDK directory. *For each makefile below, run `make` followed by `make install`.* (You may need to run install with sudo depending on your SGDK directory location.) *Be sure to `export SGDK=/path/to/sgdk/directory` if it is not default (/opt/sgdk).*
@@ -50,7 +54,9 @@ TODO: Per this [old gendev thread](https://gendev.spritesmind.net/forum/viewtopi
 SGDK comes with a precompiled library inside the lib directory. However, this seems to be compiled off a pretty old version of gcc, as using it complains about the LTO version not matching. We'll need to build our own from scratch. Use `makefile_lib` to do this. (And don't forget to `export` SGDK if your SGDK directory is not in /opt/sgdk.)
 
 ## Making a Project
-Setting up a new Megadrive project should be as simple as dropping makefile_rom into your project directory. You'll probably want to rename it to simply 'makefile' so `make` can find it easily. You will also want to modify the SGDK value inside of it to point to your SGDK directory.
+Setting up a new Megadrive project should be as simple as copying makefile_rom into your project directory and tweaking it a bit. You'll want to rename it to simply 'makefile' so `make` can find it easily.
+
+Inside the makefile, at the top, are a handful of variables that can be modified. These are the SGDK project location, your M68k cross toolchain prefix, and the subdirectories within your project for the source, headers, resources and output, and finally the name of your final ROM binary. Once this is setup, running `make` in your project root directory will build your project (hopefully with no errors).
 
 ## Other notes
 ### Optional libgcc
