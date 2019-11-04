@@ -1,4 +1,8 @@
-# Build SGDK based binary
+###################################################
+# This is the SGDK PROJECT makefile
+# Put this file in the root of your project
+# directory and build with the 'make' command
+###################################################
 
 # specify SGDK root dir
 SGDK?=/opt/sgdk

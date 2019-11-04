@@ -1,4 +1,5 @@
 SGDK?=/opt/sgdk
+
 CC:=gcc
 CFLAGS:=-Wall -O2 -s
 
@@ -17,7 +18,8 @@ $(TARGET): $(SRC)
 	$(CC) $(CFLAGS) $(INC) -o $@ $^ $(INC_DIR)/aplib.a
 
 clean:
-	rm -r $(TARGET)
+	@rm -r $(TARGET)
 
 install:
-	cp -f $(TARGET) $(SGDK)/bin
+	@cp -f $(TARGET) $(SGDK)/bin
+	@echo "Copied $(TARGET) to $(SGDK)/bin"

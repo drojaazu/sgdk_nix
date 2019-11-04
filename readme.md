@@ -20,7 +20,7 @@ Package: m68k-elf-binutils and m68k-elf-bootstrap (both on AUR)
 
 You will need cross-architecture tools for compiling/assembling/linking/etc code for the M68000 CPU. If you have to build from source, be sure to include `--target=m68k-elf` when running the configure script for each package. There should be plenty of guides for building these tools on google if needed. (Please also see the note below about libgcc.)
 
-Your M68k toolchain may use a different prefix. For example, Debian uses 'm68k-linux-gnu-' instead of 'm68k-elf-'. In this case, edit the M68K_PREFIX variable inside makefile_lib and makefile_rom, or `export M68K_PREFIX=your-m68k-prefix` before running the makefile.
+Your M68k toolchain may use a different prefix. For example, Debian and Ubuntu use 'm68k-linux-gnu-' instead of 'm68k-elf-'. You'll need to specify this prefix when you run the setup script.
 
 ### Java 8
 Package: jdk8-openjdk
@@ -36,8 +36,14 @@ Used for assembling Z80 code. We use sjasmplus instead of vanilla sjasm since ne
 
 NOTE: There have been a couple reports that sjasmplus throws errors when using the package from a repo. The solution seems to be [pulling the source directly](https://github.com/z00m128/sjasmplus) and manually building.
 
+## Initial Setup
+Run `setup.sh` in the root directory. This will check that you have the above mentioned tools installed and will compile the SGDK specific tools for your system, as well as some other helper tasks.
+
+## Making a Project
+Setting up a new Megadrive project is as simple as copying `makefile` into your project directory. Once copied, you will probably want to tweak the settings that appear at the top to match your project layout. To build your project run `make` from the project root.
+
 ## SGDK tools
-There are a number of tools included with SGDK that will need to be recompiled. Inside the sgdk_tools subdirectory, you will find makefiles to easily compile and install them in your SGDK directory. *For each makefile below, run `make` followed by `make install`.* (You may need to run install with sudo depending on your SGDK directory location.) *Be sure to `export SGDK=/path/to/sgdk/directory` if it is not default (/opt/sgdk).*
+There are a number of tools included with SGDK that will need to be recompiled. **Building these tools individually should not be necessary if you used the setup script**, but in case you need to tweak anything yourself, you will find makefiles to build/install the tools inside the `sgdk_tools` subdirectory. 
 
 ### appack
 This tool is used to compress binary data inside the ROM. SGDK includes the source for this in the tools directory... however, it is missing the prebuilt elf binaries, for some reason. So we can't use the source with SGDK. I've included the full aplib source with this project as a zip (since its license requires all files be distributed together). You can extract the files in the same directory as the zip, then run the makefile from the root.
@@ -50,13 +56,8 @@ This takes binary blobs (in this case, compiled Z80 objects) and references them
 
 TODO: Per this [old gendev thread](https://gendev.spritesmind.net/forum/viewtopic.php?p=17275#p17275), this should be do-able with objcopy, which removes the need for bintos completely. Will look into this later.
 
-## SGDK library
-SGDK comes with a precompiled library inside the lib directory. However, this seems to be compiled off a pretty old version of gcc, as using it complains about the LTO version not matching. We'll need to build our own from scratch. Use `makefile_lib` to do this. (And don't forget to `export` SGDK if your SGDK directory is not in /opt/sgdk.)
-
-## Making a Project
-Setting up a new Megadrive project should be as simple as copying makefile_rom into your project directory and tweaking it a bit. You'll want to rename it to simply 'makefile' so `make` can find it easily.
-
-Inside the makefile, at the top, are a handful of variables that can be modified. These are the SGDK project location, your M68k cross toolchain prefix, and the subdirectories within your project for the source, headers, resources and output, and finally the name of your final ROM binary. Once this is setup, running `make` in your project root directory will build your project (hopefully with no errors).
+### SGDK library (libmd.a)
+SGDK comes with a precompiled library inside the lib directory. However, this seems to be compiled off a pretty old version of gcc, as using it complains about the LTO version not matching. We'll need to build our own from scratch. Use `makefile_lib` to do this.
 
 ## Other notes
 ### Optional libgcc
@@ -68,6 +69,6 @@ make all-target-libgcc
 sudo make install-target-libgcc
 ```
 
-If you're using the m68k-elf-* tools from the Arch Linux AUR, note that they do NOT run these targets by default! You will have to run them manually. After `pkgbuild` for m68k-elf-bootstreap has completed the installation, cd to `src/gcc-build` in the package tree and run the two commands above. This should build/install libgcc for your m68k toolchain.
+If you're using the m68k-elf-* tools from the Arch Linux AUR, note that they do NOT run these targets by default! You will have to run them manually. After `pkgbuild` for m68k-elf-bootstreap has completed the installation, cd to `src/gcc-build` in the package tree and run the two commands above. This should build/install libgcc for your M68k toolchain.
 
 Next, modify your project makefile. Search for '-lgcc' and you'll find a line that is commented out. Uncomment it (and comment out the similar line above it!) to use the system libgcc instead. (*Be sure that to keep `-lgcc` at the end of the object list* or else you'll get undefined reference errors, for [reasons explained here](http://c-faq.com/lib/libsearch.html).)

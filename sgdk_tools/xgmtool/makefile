@@ -1,22 +1,25 @@
 SGDK?=/opt/sgdk
-CC:=gcc
-CFLAGS:=-fexpensive-optimizations -Os -s -lm
 
-SRC_DIR:=src
-BIN_DIR:=out
-
-TARGET:=$(BIN_DIR)/xgmtool
-INC:=-Iinc
+XGMTOOL_SRC:=$(SGDK)/tools/xgmtool
+SRC_DIR:=$(XGMTOOL_SRC)/src
+INC_DIR:=$(XGMTOOL_SRC)/inc
+OUT_DIR:=$(XGMTOOL_SRC)/out
 
 SRCEXT:=c
 SRC:=$(wildcard $(SRC_DIR)/*.c)
 
+CC:=gcc
+CFLAGS:=-fexpensive-optimizations -Os -s -lm
+
+TARGET:=$(OUT_DIR)/xgmtool
+
 $(TARGET): $(SRC)
-	@mkdir -p $(BIN_DIR)
-	$(CC) $(CFLAGS) $(INC) -o $@ $^
+	@mkdir -p $(OUT_DIR)
+	$(CC) $(CFLAGS) -I$(INC_DIR) -o $@ $^
 
 clean:
-	rm -r $(TARGET)
+	@rm -r $(TARGET)
 
 install:
-	cp -f $(TARGET) $(SGDK)/bin
+	@cp -f $(TARGET) $(SGDK)/bin
+	@echo "Copied $(TARGET) to $(SGDK)/bin"
