@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # fancy colors cause we're fancy
 CLEAR='\033[0m'
 BOLD='\033[1m'
