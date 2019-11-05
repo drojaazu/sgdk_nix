@@ -1,13 +1,15 @@
 # SGDK for Linux
 This is a set of makefiles and source code for building Sega Megadrive/Genesis software using the SGDK framework.
 
-## Background
-SGDK is intended for use on Windows, though its C/ASM library can, of course, be used on any platform. The tools here are for leveraging that library and some of the tools for easy use in a *nix environment.
+## Intended Audience
+SGDK is intended for use on Windows, though its C/ASM library can, of course, be used on any platform. The tools here are for leveraging that library and some of its build tools for easy use in a *nix environment.
+
+This has already been attempted with [Gendev](https://github.com/kubilus1/gendev). However, Gendev builds its own M68k toolchain, which is entirely unnecessary for those who already have their own toolchain set up. Gendev also comes with a lot of extra "stuff" which isn't entirely necessary. Therefore, this project is aimed at those who have an existing M68k toolchain, or who want to keep their toolchain seperate and properly maintained.
 
 *This is an early version and has not had extensive testing yet.* Bug fixes via pull requests are certainly welcome.
 
 ## Prerequisites
-I personally use Arch Linux (btw), so I will be using package names from the Arch main repo and the AUR where applicable. If you don't use arch, you should be able to find them in your own distro repo or build from source.
+This was developed on Arch Linux, but I have done my best to make it compatible with any Linux distribution. I have tested on Debian and Ubuntu, so I will provide package names for those distros as well as Arch.
 
 ### Intermediate Linux proficiency
 This project is meant for those who already have a working knowledge of *nix systems. If you're not comfortable or familiar with the console, look into [Gendev](https://github.com/kubilus1/gendev), which is an alternative Linux implementation of SGDK that is a bit more beginner friendly.
@@ -15,26 +17,34 @@ This project is meant for those who already have a working knowledge of *nix sys
 ### SGDK
 Clone the project from [the SGDK github repo](https://github.com/Stephane-D/SGDK). You're free to put these files whereever you'd like; /opt/sgdk is a good choice, and is the default location in the makefiles. However, you may want to put it in your home dir temporarily while you work through the initial setup so you're not fighting with permissions/environment var issues, and then move it to opt when you're done. Be sure to `export` SGDK accordingly.
 
+### System development tools
+Arch: `base-devel`
+Deb/Ubuntu: `build-essential`
+
+You probably already have this installed, but just in case: you will need the standard set of GNU build tools - g++, make, etc.
+
 ### M68000 toolchain
-Package: m68k-elf-binutils and m68k-elf-bootstrap (both on AUR)
+Arch AUR: `m68k-elf-binutils` and `m68k-elf-bootstrap`
+Deb/Ubuntu: `gcc-m68k-linux-gnu` and `binutils-m68k-linux-gnu`
 
 You will need cross-architecture tools for compiling/assembling/linking/etc code for the M68000 CPU. If you have to build from source, be sure to include `--target=m68k-elf` when running the configure script for each package. There should be plenty of guides for building these tools on google if needed. (Please also see the note below about libgcc.)
 
 Your M68k toolchain may use a different prefix. For example, Debian and Ubuntu use 'm68k-linux-gnu-' instead of 'm68k-elf-'. You'll need to specify this prefix when you run the setup script.
 
 ### Java 8
-Package: jdk8-openjdk
+Arch: jdk8-openjdk (or jdk11-openjdk)
+Deb/Ubuntu: openjdk-8-jre (or openjdk-11-jre)
 
 Java is used by rescomp for pulling in resources (graphics, sounds, data blobs) into the code/binary. 
 
-TODO: Is Java 8 required? Does this work with newer versions?
+Note that the code was originally written for Java 8. However, newer versions of Java should be backwards compatible. I have done some basic testing with OpenJDK 11 and found no issues, though this was not a thorough test. Also note that as of Debian 10, only JRE 11 is present in the default repos. Though this should be fine, you may have to go searching for 8 if you need it.
 
 ### sjasmplus
-Package: sjasmplus (AUR)
-
 Used for assembling Z80 code. We use sjasmplus instead of vanilla sjasm since newer versions of sjasm complain about the SGDK music driver source.
 
-NOTE: There have been a couple reports that sjasmplus throws errors when using the package from a repo. The solution seems to be [pulling the source directly](https://github.com/z00m128/sjasmplus) and manually building.
+You're going to need to build this from source, so [pull from github](https://github.com/z00m128/sjasmplus)  then `make && sudo make install`.
+
+(Also note that there is an sjasmplus package on the Arch AUR; however, that build seems to be bugged, as there have been a few users (myself included) reporting that it always crashes. Just build it from source.)
 
 ## Initial Setup
 Run `setup.sh` in the root directory. This will check that you have the above mentioned tools installed and will compile the SGDK specific tools for your system, as well as some other helper tasks.

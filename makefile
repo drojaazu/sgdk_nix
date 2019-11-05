@@ -151,8 +151,8 @@ $(OUT_DIR)/symbols.txt: $(OUT_DIR)/rom.out
 
 # Please see readme file about linking libgcc in this section
 $(OUT_DIR)/rom.out: $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD)
-	$(CC) -n -T $(SGDK)/md.ld -nostdlib $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD) $(SGDK)/lib/libgcc.a -o $(OUT_DIR)/rom.out
-# $(CC) -n -T $(SGDK)/md.ld -nostdlib $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD) -lgcc -o $(OUT_DIR)/rom.out
+	$(CC) -n -Wl,--build-id=none -T $(SGDK)/md.ld -nostdlib $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD) $(SGDK)/lib/libgcc.a -o $(OUT_DIR)/rom.out
+# $(CC) -n -Wl,--build-id=none -T $(SGDK)/md.ld -nostdlib $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD) -lgcc -o $(OUT_DIR)/rom.out
 
 $(OUT_DIR)/sega.o: $(SRC_DIR)/boot/sega.s $(OUT_DIR)/rom_head.bin
 	$(CC) $(DEF_FLAGS_M68K) -c $(SRC_DIR)/boot/sega.s -o $@

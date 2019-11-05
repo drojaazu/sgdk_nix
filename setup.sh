@@ -84,5 +84,5 @@ while true; do
 
 echo
 echo -e "${GREEN}Setup complete!${CLEAR}"
-echo "You should be good to go. Copy makefile_rom into the root of your project directory, rename it to 'makefile' and modify the settings inside at the top."
-echo "You do NOT have to run this setup again for a new project. Just copy makefile_rom into as many projects as you like."
+echo "You should be good to go. Copy 'makefile' into the root of your project directory and modify the settings inside at the top."
+echo "You do NOT need to run this setup again for a new project. Just copy makefile into as many projects as you like."
