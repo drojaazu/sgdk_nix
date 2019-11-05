@@ -18,24 +18,26 @@ This project is meant for those who already have a working knowledge of *nix sys
 Clone the project from [the SGDK github repo](https://github.com/Stephane-D/SGDK). You're free to put these files whereever you'd like; /opt/sgdk is a good choice, and is the default location in the makefiles. However, you may want to put it in your home dir temporarily while you work through the initial setup so you're not fighting with permissions/environment var issues, and then move it to opt when you're done. Be sure to `export` SGDK accordingly.
 
 ### System development tools
-Arch: `base-devel`
-Deb/Ubuntu: `build-essential`
+- Arch: `base-devel`
+- Deb/Ubuntu: `build-essential`
 
 You probably already have this installed, but just in case: you will need the standard set of GNU build tools - g++, make, etc.
 
 ### M68000 toolchain
-Arch AUR: `m68k-elf-binutils` and `m68k-elf-bootstrap`
-Deb/Ubuntu: `gcc-m68k-linux-gnu` and `binutils-m68k-linux-gnu`
+- Arch AUR: `m68k-elf-binutils` and `m68k-elf-bootstrap`
+- Deb/Ubuntu: `gcc-m68k-linux-gnu` and `binutils-m68k-linux-gnu`
 
-You will need cross-architecture tools for compiling/assembling/linking/etc code for the M68000 CPU. If you have to build from source, be sure to include `--target=m68k-elf` when running the configure script for each package. There should be plenty of guides for building these tools on google if needed. (Please also see the note below about libgcc.)
+You will need cross-architecture tools for compiling/assembling/linking/etc code for the Megadrive's M68000 CPU.
 
-Your M68k toolchain may use a different prefix. For example, Debian and Ubuntu use 'm68k-linux-gnu-' instead of 'm68k-elf-'. You'll need to specify this prefix when you run the setup script.
+If your distro does not have a package, you will, of coutse, have to build from source manually. There are a number of guides online to help with this, but the biggest key here is to use `--target=m68k-elf` when running the configure script for each package. (Please also see the note below about libgcc.)
 
-### Java 8
-Arch: jdk8-openjdk (or jdk11-openjdk)
-Deb/Ubuntu: openjdk-8-jre (or openjdk-11-jre)
+Your M68k tools will have a different filename prefix to differentiate them from the build tools for your native architecture. Debian and Ubuntu use `m68k-linux-gnu-` while Arch (and tools built with `--target=m68k-elf`) use `m68k-elf-`. The tool prefix is important, as you'll need to specify it when you run the setup script.
 
-Java is used by rescomp for pulling in resources (graphics, sounds, data blobs) into the code/binary. 
+### Java
+- Arch: `jdk8-openjdk` (or newer, such as `jdk11-openjdk`)
+- Deb/Ubuntu: `openjdk-8-jre` (or newer, such as `openjdk-11-jre`)
+
+Java is used by rescomp for pulling resources (graphics, sounds, data blobs) into the code/binary. 
 
 Note that the code was originally written for Java 8. However, newer versions of Java should be backwards compatible. I have done some basic testing with OpenJDK 11 and found no issues, though this was not a thorough test. Also note that as of Debian 10, only JRE 11 is present in the default repos. Though this should be fine, you may have to go searching for 8 if you need it.
 
