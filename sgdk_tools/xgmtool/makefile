@@ -9,13 +9,13 @@ SRCEXT:=c
 SRC:=$(wildcard $(SRC_DIR)/*.c)
 
 CC:=gcc
-CFLAGS:=-fexpensive-optimizations -Os -s -lm
+CFLAGS:=-fexpensive-optimizations -Os -s
 
 TARGET:=$(OUT_DIR)/xgmtool
 
 $(TARGET): $(SRC)
 	@mkdir -p $(OUT_DIR)
-	$(CC) $(CFLAGS) -I$(INC_DIR) -o $@ $^
+	$(CC) $(CFLAGS) -I$(INC_DIR) -o $@ $^ -lm
 
 clean:
 	@rm -r $(TARGET)
