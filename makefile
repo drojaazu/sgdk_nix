@@ -82,7 +82,8 @@ LSTS:=$(addprefix $(OUT_DIR)/, $(LST))
 INC:=-I$(INC_DIR) -I$(SRC_DIR) -I$(RES_DIR) -I$(LIB_INC) -I$(LIB_RES)
 
 # default flags
-DEF_FLAGS_M68K:=-m68000 -Wall -fno-builtin $(INC)
+ARCH_FLAG:=-m68000
+DEF_FLAGS_M68K:=$(ARCH_FLAG) -Wall -fno-builtin $(INC)
 DEF_FLAGS_Z80:=-i$(SRC_DIR) -i$(INC_DIR) -i$(RES_DIR) -i$(LIB_SRC) -i$(LIB_INC)
 
 release: FLAGS:=$(DEF_FLAGS_M68K) -O3 -fuse-linker-plugin -fno-web -fno-gcse -fno-unit-at-a-time -fomit-frame-pointer -flto
@@ -151,8 +152,8 @@ $(OUT_DIR)/symbols.txt: $(OUT_DIR)/rom.out
 
 # Please see readme file about linking libgcc in this section
 $(OUT_DIR)/rom.out: $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD)
-	$(CC) -n -Wl,--build-id=none -T $(SGDK)/md.ld -nostdlib $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD) $(SGDK)/lib/libgcc.a -o $(OUT_DIR)/rom.out
-# $(CC) -n -Wl,--build-id=none -T $(SGDK)/md.ld -nostdlib $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD) -lgcc -o $(OUT_DIR)/rom.out
+	$(CC) $(ARCH_FLAG) -n -Wl,--build-id=none -T $(SGDK)/md.ld -nostdlib $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD) $(SGDK)/lib/libgcc.a -o $(OUT_DIR)/rom.out
+# $(CC) $(ARCH_FLAG) -n -Wl,--build-id=none -T $(SGDK)/md.ld -nostdlib $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD) -lgcc -o $(OUT_DIR)/rom.out
 
 $(OUT_DIR)/sega.o: $(SRC_DIR)/boot/sega.s $(OUT_DIR)/rom_head.bin
 	$(CC) $(DEF_FLAGS_M68K) -c $(SRC_DIR)/boot/sega.s -o $@
