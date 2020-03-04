@@ -16,13 +16,18 @@ function cmdcheck() {
 	command -v $1 >/dev/null || fail "not found!" && echo -e "${GREEN}found!${CLEAR}"
 }
 
-[[ -z "${SGDK}" ]] && SGDK='/opt/sgdk'
+[[ -z "${SGDK}" ]] && SGDK='/opt/toolchains/sega/sdk/sgdk'
+[[ -z "${TOOLCHAIN_DIR}" ]] && TOOLCHAIN_DIR='/opt/toolchains/sega/m68k-elf-gcc'
 [[ -z "${M68K_PREFIX}" ]] && M68K_PREFIX='m68k-elf-'
 echo -e "${BOLD}SGDK for *nix - Initial Setup${CLEAR}"
 read -ep "Please specify SGDK directory: " -i ${SGDK} SGDK
 [[ -d "${SGDK}" ]] || fail "SGDK directory not found!"
 SGDK_BIN=${SGDK}/bin
+read -ep "Please specify M68k toolchain dir: " -i ${TOOLCHAIN_DIR} TOOLCHAIN_DIR
 read -ep "Please specify M68k toolchain prefix: " -i ${M68K_PREFIX} M68K_PREFIX
+
+export PATH=$PATH:${TOOLCHAIN_DIR}/bin
+
 
 echo
 echo -e "${YELLOW}Checking for necessary tools...${CLEAR}"
@@ -68,7 +73,7 @@ echo -e "${GREEN}Success!${CLEAR}"
 
 echo
 echo -e "${YELLOW}Building SGDK library...${CLEAR}"
-(export SGDK=${SGDK}; make -f makefile_lib && make -f makefile_lib cleanobj)
+(export SGDK=${SGDK}; make -f makefile_lib cleanobj && make -f makefile_lib release)
 [[ $? != 0 ]] && fail "Failed to build SGDK library"
 [[ -f ${SGDK}/lib/libmd.a ]] || fail "Failed to build SGDK library"
 echo -e "${GREEN}Success!${CLEAR}"
