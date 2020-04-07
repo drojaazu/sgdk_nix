@@ -75,12 +75,16 @@ SGDK comes with a precompiled library inside the lib directory. However, this se
 ### Optional libgcc
 SGDK includes a prebuilt libgcc archive inside its lib subdirectory, which is used when building a project ROM. Linking with this prebuilt binary should not pose any significant problems, and so it is the default option in the project makefile for ease of use. However, if you're like me and you're picky about doing things "properly," you'll want to build with the libgcc library that matches your gcc version.
 
-To do this, you'll first need to ensure there is a libgcc present for your M68k cross compiler. When compiling gcc, be sure to run the `all-target-libgcc` and `install-target-libgcc` targets as well:
+To do this, you'll first need to ensure there is a libgcc present for your M68k cross compiler. This will be named 'libgcc.a' and should be located within the gcc library directory (likely somewhere in /lib; for example, for gcc 9 on Debian/Ubuntu, it would be in `/lib/gcc-cross/m68k-linux-gnu`.)
+
+If you're using the m68k-elf-* tools from the Arch Linux AUR, note that libgcc is NOT built by default! You will have to run them manually. After `pkgbuild` for m68k-elf-bootstreap has completed the installation, cd to `src/gcc-build` in the package tree and run the two commands above. This should build/install libgcc for your M68k toolchain.
+
+When compiling gcc, be sure to run the `all-target-libgcc` and `install-target-libgcc` targets as well:
 ```
 make all-target-libgcc
 sudo make install-target-libgcc
 ```
 
-If you're using the m68k-elf-* tools from the Arch Linux AUR, note that they do NOT run these targets by default! You will have to run them manually. After `pkgbuild` for m68k-elf-bootstreap has completed the installation, cd to `src/gcc-build` in the package tree and run the two commands above. This should build/install libgcc for your M68k toolchain.
+
 
 Next, modify your project makefile. Search for '-lgcc' and you'll find a line that is commented out. Uncomment it (and comment out the similar line above it!) to use the system libgcc instead. (*Be sure that to keep `-lgcc` at the end of the object list* or else you'll get undefined reference errors, for [reasons explained here](http://c-faq.com/lib/libsearch.html).)
