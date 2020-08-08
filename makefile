@@ -83,7 +83,7 @@ INC:=-I$(INC_DIR) -I$(SRC_DIR) -I$(RES_DIR) -I$(LIB_INC) -I$(LIB_RES)
 
 # default flags
 ARCH_FLAG:=-m68000
-DEF_FLAGS_M68K:=$(ARCH_FLAG) -Wall -fno-builtin $(INC)
+DEF_FLAGS_M68K:=$(ARCH_FLAG) -Wall -fno-builtin -fno-pie -no-pie -fno-stack-protector -fno-lto $(INC)
 DEF_FLAGS_Z80:=-i$(SRC_DIR) -i$(INC_DIR) -i$(RES_DIR) -i$(LIB_SRC) -i$(LIB_INC)
 
 release: FLAGS:=$(DEF_FLAGS_M68K) -O3 -fuse-linker-plugin -fno-web -fno-gcse -fno-unit-at-a-time -fomit-frame-pointer -flto

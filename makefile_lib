@@ -47,7 +47,7 @@ LST:=$(SRC_C:.c=.lst)
 INC:=-I$(INC_DIR) -I$(SRC_DIR) -I$(RES_DIR)
 
 # default flags
-DEF_FLAGS_M68K:=-m68000 -Wall -fno-builtin $(INC)
+DEF_FLAGS_M68K:=-m68000 -Wall -fno-builtin -fno-pie -no-pie -fno-stack-protector -fno-lto $(INC)
 DEF_FLAGS_Z80:=-i$(SRC_DIR) -i$(INC_DIR)
 
 release: envcheck
