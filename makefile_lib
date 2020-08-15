@@ -90,7 +90,7 @@ $(SGDK)/lib/libmd.a: $(OBJ)
 	ar rs $(SGDK)/lib/libmd.a $(OBJ)
 
 $(SGDK)/lib/libmd_debug.a: $(OBJ)
-	ar rs $(SGDK)/lib/libmd_debug.a
+	ar rs $(SGDK)/lib/libmd_debug.a $(OBJ)
 
 %.lst: %.c
 	$(CC) $(FLAGS) -c $< -o $@
