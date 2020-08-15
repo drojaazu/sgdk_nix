@@ -1,7 +1,7 @@
 # Build SGDK library to be referenced in projects
 
 # specify SGDK root dir
-SGDK?=/opt/sgdk
+SGDK?=/opt/toolchains/genesis/sgdk2
 
 # specify your M68k GNU toolchain prefix
 M68K_PREFIX?=m68k-elf-
@@ -47,11 +47,11 @@ LST:=$(SRC_C:.c=.lst)
 INC:=-I$(INC_DIR) -I$(SRC_DIR) -I$(RES_DIR)
 
 # default flags
-DEF_FLAGS_M68K:=-m68000 -Wall -fno-builtin $(INC)
+DEF_FLAGS_M68K:=-m68000 -Wall -Wextra -Wno-shift-negative-value -fno-builtin $(INC)
 DEF_FLAGS_Z80:=-i$(SRC_DIR) -i$(INC_DIR)
 
 release: envcheck
-release: FLAGS:=$(DEF_FLAGS_M68K) -O3 -fno-web -fno-gcse -fno-unit-at-a-time -fomit-frame-pointer
+release: FLAGS:=$(DEF_FLAGS_M68K) -O3 -fuse-linker-plugin -fno-lto -fno-web -fno-gcse -fno-unit-at-a-time -fomit-frame-pointer -flto
 release: $(SGDK)/lib/libmd.a
 
 debug: envcheck
@@ -59,7 +59,7 @@ debug: FLAGS:=$(DEF_FLAGS_M68K) -O1 -ggdb -DDEBUG=1
 debug: $(SGDK)/lib/libmd_debug.a
 
 asm: envcheck
-asm: FLAGS:=$(DEF_FLAGS_M68K) -O3 -fno-web -fno-gcse -fno-unit-at-a-time -fomit-frame-pointer -S
+asm: FLAGS:=$(DEF_FLAGS_M68K) -O3  -fuse-linker-plugin -fno-lto -fno-web -fno-gcse -fno-unit-at-a-time -fomit-frame-pointer -S
 asm: $(LST)
 
 all: release
@@ -87,19 +87,19 @@ clean: cleanobj
 	@rm -f $(SGDK)/lib/libmd.a $(SGDK)/lib/libmd_debug.a $(OBJ)
 
 $(SGDK)/lib/libmd.a: $(OBJ)
-	ar rs $(SGDK)/lib/libmd.a $(OBJ)
+	ar rs $(SGDK)/lib/libmd.a --plugin=liblto_plugin.so $(OBJ)
 
 $(SGDK)/lib/libmd_debug.a: $(OBJ)
-	ar rs $(SGDK)/lib/libmd_debug.a $(OBJ)
+	ar rs $(SGDK)/lib/libmd_debug.a --plugin=liblto_plugin.so $(OBJ)
 
 %.lst: %.c
 	$(CC) $(FLAGS) -c $< -o $@
 
 %.o: %.c
-	$(CC) $(FLAGS) -c $< -o $@
+	$(CC) $(FLAGS) -MMD -c $< -o $@
 
 %.o: %.s
-	$(CC) $(FLAGS) -c $< -o $@
+	$(CC) -x assembler-with-cpp -MMD $(FLAGS) -c $< -o $@
 
 %.s: %.res
 	$(RESCOMP) $< $@

@@ -5,7 +5,7 @@
 ###################################################
 
 # specify SGDK root dir
-SGDK?=/opt/sgdk
+SGDK?=/opt/toolchains/genesis/sgdk2
 
 # specify your M68k GNU toolchain prefix
 M68K_PREFIX?=m68k-elf-
@@ -143,12 +143,11 @@ postbuild:
 	@echo -e "${GREEN}Build complete!${CLEAR}"
 
 $(OUT_DIR)/$(BIN): $(OUT_DIR)/rom.out
-	@$(OBJCPY) -O binary $(OUT_DIR)/rom.out $(OUT_DIR)/temp
-	@dd if=out/temp of=$@ bs=8K conv=sync status=none
-	@rm -f out/temp
+	@$(OBJCPY) -O binary $(OUT_DIR)/rom.out $(OUT_DIR)/${BIN}
+	@$(SIZEBND) $(OUT_DIR)/$(BIN) -sizealign 131072
 
 $(OUT_DIR)/symbols.txt: $(OUT_DIR)/rom.out
-	$(NM) -n $(OUT_DIR)/rom.out > $(OUT_DIR)/symbols.txt
+	$(NM) --plugin=liblto_plugin.so -n $(OUT_DIR)/rom.out > $(OUT_DIR)/symbols.txt
 
 # Please see readme file about linking libgcc in this section
 $(OUT_DIR)/rom.out: $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD)
@@ -174,10 +173,10 @@ $(OUT_DIR)/%.lst: %.c
 	$(CC) $(FLAGS) -c $< -o $@
 
 $(OUT_DIR)/%.o: %.c
-	$(CC) $(FLAGS) -c $< -o $@
+	$(CC) -x assembler-with-cpp $(FLAGS) -MMD -c $< -o $@
 
 $(OUT_DIR)/%.o: %.s
-	$(CC) $(FLAGS) -c $< -o $@
+	$(CC) -x assembler-with-cpp -MMD $(FLAGS) -c $< -o $@
 
 %.s: %.res
 	@$(RESCOMP) $< $@
