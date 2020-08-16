@@ -4,13 +4,13 @@
 # directory and build with the 'make' command
 ###################################################
 
-# specify SGDK root dir
-SGDK?=/opt/sgdk
+# SGDK root dir
+SGDK?=/opt/toolchains/genesis/sgdk
 
-# specify your M68k GNU toolchain prefix
+# M68k GNU toolchain prefix
 M68K_PREFIX?=m68k-elf-
 
-# project source code & resources directories
+# Project source code and resources directories
 # C source code
 SRC_DIR:=src
 # C headers
@@ -20,13 +20,11 @@ RES_DIR:=res
 # Output directory (build files, final ROM, etc)
 OUT_DIR:=out
 
-# The name of your final ROM binary
-BIN=rom.bin
+# Name of ROM binary
+BIN=irena.bin
 
-###################################################
-# You shouldn't need to configure anything further
-# for your project below this line
-###################################################
+# Emulator
+EMULATOR=blastem
 
 # fancy colors cause we're fancy
 CLEAR=\033[0m
@@ -39,23 +37,26 @@ LIB_SRC:=$(SGDK)/src
 LIB_RES:=$(SGDK)/res
 LIB_INC:=$(SGDK)/inc
 
-# NOTE: we assume all commands appear somewhere in PATH.
-# If you've manually configured/built some of these
-# tools and their directories are not listed in PATH
-# you will need to specify the full path of each command
+# Set the CPUS numbers for fast build
+CPUS ?= $(shell nproc)
+MAKEFLAGS:= --jobs=$(CPUS)
 
-# m68k toolset
+# Recursive wildcard
+rwildcard = $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
+
+# M68k toolset
 CC:=$(M68K_PREFIX)gcc
 OBJCPY:=$(M68K_PREFIX)objcopy
 NM:=$(M68K_PREFIX)nm
 LD:=$(M68K_PREFIX)ld
 
-# z80 toolset
+# Z80 toolset
 ASM_Z80=sjasmplus
 
 # SGDK toolset
 RESCOMP:=java -jar $(SGDK)/bin/rescomp.jar
 BINTOS:=$(SGDK)/bin/bintos
+SIZEBND= $(SGDK)/bin/sizebnd
 
 # gather code & resources
 SRC_C:=$(wildcard $(SRC_DIR)/*.c)
@@ -67,7 +68,11 @@ SRC_S80+=$(wildcard *.s80)
 RES:=$(wildcard $(RES_DIR)/*.res)
 RES+=$(wildcard *.res)
 
-# setup output objects
+# Gather code & ressources into extra dirs
+SRC_EXTRA_C:= $(wildcard $(SRC_DIR)/**/*.c)
+SRC_C+= $(filter-out $(SRC_DIR)/boot/rom_head.c, $(SRC_EXTRA_C))
+
+# Setup output objects
 OBJ:=$(RES:.res=.o)
 OBJ+=$(SRC_S80:.s80=.o)
 OBJ+=$(SRC_S:.s=.o)
@@ -75,18 +80,21 @@ OBJ+=$(SRC_C:.c=.o)
 
 OBJS:=$(addprefix $(OUT_DIR)/, $(OBJ))
 
-LST:=$(SRC_C:.c=.lst)
+LST:=$(SRC_C:.c=.asm)
 LSTS:=$(addprefix $(OUT_DIR)/, $(LST))
 
-# setup includes
-INC:=-I$(INC_DIR) -I$(SRC_DIR) -I$(RES_DIR) -I$(LIB_INC) -I$(LIB_RES)
+# Get list
+SRC_DIR_LIST:= $(addprefix -I ,$(sort $(dir  $(call rwildcard,$(SRC_DIR),*))))
 
-# default flags
+# Setup includes
+INC:=$(SRC_DIR_LIST) -I$(INC_DIR) -I$(SRC_DIR) -I$(RES_DIR) -I$(LIB_INC) -I$(LIB_RES)
+
+# Default flags
 ARCH_FLAG:=-m68000
-DEF_FLAGS_M68K:=$(ARCH_FLAG) -Wall -fno-builtin $(INC)
+DEF_FLAGS_M68K:=$(ARCH_FLAG) -m68000 -Wall -Wextra -Wno-shift-negative-value -fno-builtin $(INC)
 DEF_FLAGS_Z80:=-i$(SRC_DIR) -i$(INC_DIR) -i$(RES_DIR) -i$(LIB_SRC) -i$(LIB_INC)
 
-release: FLAGS:=$(DEF_FLAGS_M68K) -O3 -fuse-linker-plugin -fno-web -fno-gcse -fno-unit-at-a-time -fomit-frame-pointer -flto
+release: FLAGS:=$(DEF_FLAGS_M68K) -O3 -fuse-linker-plugin -fno-web -fno-gcse -fomit-frame-pointer -fno-unit-at-a-time -flto
 release: LIB_MD:=$(SGDK)/lib/libmd.a
 release: BUILDTYPE=release
 release: envcheck prebuild $(OUT_DIR)/$(BIN) postbuild
@@ -96,7 +104,7 @@ debug: LIB_MD:=$(SGDK)/lib/libmd_debug.a
 debug: BUILDTYPE=debug
 debug: envcheck prebuild $(OUT_DIR)/$(BIN) $(OUT_DIR)/rom.out $(OUT_DIR)/symbols.txt postbuild
 
-asm: FLAGS:=$(DEF_FLAGS_M68K) -O3 -fuse-linker-plugin -fno-web -fno-gcse -fno-unit-at-a-time -fomit-frame-pointer -S
+asm: FLAGS:=$(DEF_FLAGS_M68K) -O3 -fuse-linker-plugin -fno-web -fno-gcse -fno-unit-at-a-time  -S
 asm: BUILDTYPE:=asm
 asm: envcheck prebuild $(LSTS) postbuild
 
@@ -132,9 +140,13 @@ cleanRelease: cleanrelease
 cleanDebug: cleandebug
 cleanAsm: cleanasm
 
+run: release
+	@$(EMULATOR) $(OUT_DIR)/$(BIN)
+
 prebuild:
 	@mkdir -p $(SRC_DIR)/boot
 	@mkdir -p $(OUT_DIR)
+
 	@mkdir -p $(OUT_DIR)/$(SRC_DIR)
 	@mkdir -p $(OUT_DIR)/$(RES_DIR)
 	@echo -e "${YELLOW}Beginning $(BUILDTYPE) project build...${CLEAR}"
@@ -143,9 +155,8 @@ postbuild:
 	@echo -e "${GREEN}Build complete!${CLEAR}"
 
 $(OUT_DIR)/$(BIN): $(OUT_DIR)/rom.out
-	@$(OBJCPY) -O binary $(OUT_DIR)/rom.out $(OUT_DIR)/temp
-	@dd if=out/temp of=$@ bs=8K conv=sync status=none
-	@rm -f out/temp
+	@$(OBJCPY) -O binary $(OUT_DIR)/rom.out $(OUT_DIR)/${BIN}
+	@$(SIZEBND) $(OUT_DIR)/$(BIN) -sizealign 131072
 
 $(OUT_DIR)/symbols.txt: $(OUT_DIR)/rom.out
 	$(NM) -n $(OUT_DIR)/rom.out > $(OUT_DIR)/symbols.txt
@@ -153,7 +164,6 @@ $(OUT_DIR)/symbols.txt: $(OUT_DIR)/rom.out
 # Please see readme file about linking libgcc in this section
 $(OUT_DIR)/rom.out: $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD)
 	$(CC) $(ARCH_FLAG) -n -Wl,--build-id=none -T $(SGDK)/md.ld -nostdlib $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD) $(SGDK)/lib/libgcc.a -o $(OUT_DIR)/rom.out
-# $(CC) $(ARCH_FLAG) -n -Wl,--build-id=none -T $(SGDK)/md.ld -nostdlib $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD) -lgcc -o $(OUT_DIR)/rom.out
 
 $(OUT_DIR)/sega.o: $(SRC_DIR)/boot/sega.s $(OUT_DIR)/rom_head.bin
 	$(CC) $(DEF_FLAGS_M68K) -c $(SRC_DIR)/boot/sega.s -o $@
@@ -170,20 +180,26 @@ $(SRC_DIR)/boot/sega.s: $(LIB_SRC)/boot/sega.s
 $(SRC_DIR)/boot/rom_head.c: $(LIB_SRC)/boot/rom_head.c
 	@cp $< $@
 
-$(OUT_DIR)/%.lst: %.c
+$(OUT_DIR)/%.asm: %.c
+	@mkdir -p $(@D)
 	$(CC) $(FLAGS) -c $< -o $@
 
 $(OUT_DIR)/%.o: %.c
-	$(CC) $(FLAGS) -c $< -o $@
+	@mkdir -p $(@D)
+	$(CC) $(FLAGS) -MMD -c $< -o $@
 
 $(OUT_DIR)/%.o: %.s
-	$(CC) $(FLAGS) -c $< -o $@
+	@mkdir -p $(@D)
+	$(CC) -x assembler-with-cpp -MMD $(FLAGS) -c $< -o $@
 
 %.s: %.res
+	@mkdir -p $(@D)
 	@$(RESCOMP) $< $@
 
 %.o80: %.s80
-	@$(ASM_Z80) $(DEF_FLAGS_Z80) $< $@ out.lst
+	@mkdir -p $(@D)
+	@$(ASM_Z80) $(DEF_FLAGS_Z80) $< $@ out.asm
 
 %.s: %.o80
+	@mkdir -p $(@D)
 	@$(BINTOS) $<

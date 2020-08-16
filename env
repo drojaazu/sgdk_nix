@@ -1,0 +1,3 @@
+# Motorola 68000 environnement
+export PATH="/opt/toolchains/genesis/m68k-elf/bin:$PATH"
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/toolchains/genesis/m68k-elf/libexec/gcc/m68k-elf/6.3.0

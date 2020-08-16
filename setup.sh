@@ -6,6 +6,8 @@ RED='\033[1;31m'
 YELLOW='\033[1;33m'
 GREEN='\033[1;32m'
 
+source .env
+
 function fail() {
 	echo -e "${RED}${1}${CLEAR}"
 	exit -1
@@ -16,7 +18,7 @@ function cmdcheck() {
 	command -v $1 >/dev/null || fail "not found!" && echo -e "${GREEN}found!${CLEAR}"
 }
 
-[[ -z "${SGDK}" ]] && SGDK='/opt/sgdk'
+[[ -z "${SGDK}" ]] && SGDK='/opt/toolchains/genesis/sgdk'
 [[ -z "${M68K_PREFIX}" ]] && M68K_PREFIX='m68k-elf-'
 echo -e "${BOLD}SGDK for *nix - Initial Setup${CLEAR}"
 read -ep "Please specify SGDK directory: " -i ${SGDK} SGDK
@@ -67,10 +69,24 @@ echo -e "${YELLOW}Building bintos...${CLEAR}"
 echo -e "${GREEN}Success!${CLEAR}"
 
 echo
+echo -e "${YELLOW}Building sizebnd...${CLEAR}"
+(export SGDK=${SGDK}; cd sgdk_tools/sizebnd && make && make install && make clean)
+[[ $? != 0 ]] && fail "Failed to build sizebnd"
+[[ -x ${SGDK_BIN}/sizebnd ]] || fail "Failed to install bnd"
+echo -e "${GREEN}Success!${CLEAR}"
+
+echo
 echo -e "${YELLOW}Building SGDK library...${CLEAR}"
 (export SGDK=${SGDK}; make -f makefile_lib && make -f makefile_lib cleanobj)
 [[ $? != 0 ]] && fail "Failed to build SGDK library"
 [[ -f ${SGDK}/lib/libmd.a ]] || fail "Failed to build SGDK library"
+echo -e "${GREEN}Success!${CLEAR}"
+
+echo
+echo -e "${YELLOW}Building SGDK debug library...${CLEAR}"
+(export SGDK=${SGDK}; make -f makefile_lib debug && make -f makefile_lib cleanobj)
+[[ $? != 0 ]] && fail "Failed to build SGDK library"
+[[ -f ${SGDK}/lib/libmd_debug.a ]] || fail "Failed to build SGDK debug library"
 echo -e "${GREEN}Success!${CLEAR}"
 
 echo
