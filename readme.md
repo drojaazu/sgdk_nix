@@ -68,6 +68,9 @@ This takes binary blobs (in this case, compiled Z80 objects) and references them
 
 TODO: Per this [old gendev thread](https://gendev.spritesmind.net/forum/viewtopic.php?p=17275#p17275), this should be do-able with objcopy, which removes the need for bintos completely. Will look into this later.
 
+### maccerX
+A macro processor for M68k assembly. Shouldn't really be necessary, but I've included for project compatibility since SGDK has it.
+
 ### SGDK library (libmd.a)
 SGDK comes with a precompiled library inside the lib directory. However, this seems to be compiled off a pretty old version of gcc, as using it complains about the LTO version not matching. We'll need to build our own from scratch. Use `makefile_lib` to do this.
 
@@ -84,7 +87,5 @@ When compiling gcc, be sure to run the `all-target-libgcc` and `install-target-l
 make all-target-libgcc
 sudo make install-target-libgcc
 ```
-
-
 
 Next, modify your project makefile. Search for '-lgcc' and you'll find a line that is commented out. Uncomment it (and comment out the similar line above it!) to use the system libgcc instead. (*Be sure that to keep `-lgcc` at the end of the object list* or else you'll get undefined reference errors, for [reasons explained here](http://c-faq.com/lib/libsearch.html).)

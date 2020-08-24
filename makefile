@@ -56,6 +56,7 @@ ASM_Z80=sjasmplus
 # SGDK toolset
 RESCOMP:=java -jar $(SGDK)/bin/rescomp.jar
 BINTOS:=$(SGDK)/bin/bintos
+MACCER:=$(SGDK)/bin/maccer
 
 # gather code & resources
 SRC_C:=$(wildcard $(SRC_DIR)/*.c)
@@ -64,16 +65,33 @@ SRC_S:=$(wildcard $(SRC_DIR)/*.s)
 SRC_S+=$(wildcard *.s)
 SRC_S80:=$(wildcard $(SRC_DIR)/*.s80)
 SRC_S80+=$(wildcard *.s80)
+SRC_ASM:=$(wildcard $(SRC_DIR)/*.asm)
+SRC_ASM+=$(wildcard *.asm)
+
 RES:=$(wildcard $(RES_DIR)/*.res)
 RES+=$(wildcard *.res)
+RES_C:=$(wildcard $(RES_DIR)/*.c)
+RES_S:=$(wildcard $(RES_DIR)/*.s)
+
+RES_RS:=$(RES:.res=.rs)
+RES_H:=$(RES:.res=.h)
+RES_DEP:=$(RES:.red=.d)
+RES_DEPS:=$(addprefix $(OUT_DIR)/,$(RES_DEP))
 
 # setup output objects
 OBJ:=$(RES:.res=.o)
+OBJ+=$(RES_C:.c=.o)
+OBJ+=$(RES_S:.s=.o)
 OBJ+=$(SRC_S80:.s80=.o)
+OBJ+=$(SRC_ASM:.asm=.o)
 OBJ+=$(SRC_S:.s=.o)
 OBJ+=$(SRC_C:.c=.o)
 
 OBJS:=$(addprefix $(OUT_DIR)/, $(OBJ))
+
+DEPS:=$(OBJS:.o=.d)
+
+
 
 LST:=$(SRC_C:.c=.lst)
 LSTS:=$(addprefix $(OUT_DIR)/, $(LST))
@@ -83,7 +101,7 @@ INC:=-I$(INC_DIR) -I$(SRC_DIR) -I$(RES_DIR) -I$(LIB_INC) -I$(LIB_RES)
 
 # default flags
 ARCH_FLAG:=-m68000
-DEF_FLAGS_M68K:=$(ARCH_FLAG) -Wall -fno-builtin $(INC)
+DEF_FLAGS_M68K:=$(ARCH_FLAG) -Wall -Wextra -Wno-shift-negative-value -fno-builtin $(INC)
 DEF_FLAGS_Z80:=-i$(SRC_DIR) -i$(INC_DIR) -i$(RES_DIR) -i$(LIB_SRC) -i$(LIB_INC)
 
 release: FLAGS:=$(DEF_FLAGS_M68K) -O3 -fuse-linker-plugin -fno-web -fno-gcse -fno-unit-at-a-time -fomit-frame-pointer -flto
@@ -101,24 +119,34 @@ asm: BUILDTYPE:=asm
 asm: envcheck prebuild $(LSTS) postbuild
 
 all: release
-default: release
-Default: release
+
 Release: release
 Asm: asm
 
 .PHONY: clean
 
+-include $(DEPS)
+
 envcheck:
 	@if [ ! -d $(SGDK) ]; then echo -e "${RED}*** SGDK directory not found!${CLEAR}"; exit -1; fi
 
+cleantmp:
+	@rm -f $(RES_RS)
+
+cleandep:
+	@rm -f $(DEPS)
+
 cleanlst:
 	@rm -f $(LSTS)
+
+cleanres: cleantmp
+	@rm -f $(RES_H) $(RES_DEP) $(RES_DEPS)
 
 cleanobj:
 	@rm -f $(OBJS) $(OUT_DIR)/sega.o $(OUT_DIR)/rom_head.bin $(OUT_DIR)/rom_head.o $(OUT_DIR)/rom.out
 
 clean: cleanobj cleanlst
-	@rm -f out.lst $(OUT_DIR)/cmd_ $(OUT_DIR)/rom.nm $(OUT_DIR)/rom.wch $(OUT_DIR)/$(BIN)
+	@rm -f out.lst $(OUT_DIR)/rom.nm $(OUT_DIR)/rom.wch $(OUT_DIR)/$(BIN)
 
 cleandebug: clean
 	@rm -f $(OUT_DIR)/symbols.txt
@@ -144,16 +172,16 @@ postbuild:
 
 $(OUT_DIR)/$(BIN): $(OUT_DIR)/rom.out
 	@$(OBJCPY) -O binary $(OUT_DIR)/rom.out $(OUT_DIR)/temp
-	@dd if=out/temp of=$@ bs=8K conv=sync status=none
+	@dd if=out/temp of=$@ bs=128K conv=sync status=none
 	@rm -f out/temp
 
 $(OUT_DIR)/symbols.txt: $(OUT_DIR)/rom.out
-	$(NM) -n $(OUT_DIR)/rom.out > $(OUT_DIR)/symbols.txt
+	$(NM) --plugin=liblto_plugin.so -n $(OUT_DIR)/rom.out > $(OUT_DIR)/symbols.txt
 
 # Please see readme file about linking libgcc in this section
 $(OUT_DIR)/rom.out: $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD)
-	$(CC) $(ARCH_FLAG) -n -Wl,--build-id=none -T $(SGDK)/md.ld -nostdlib $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD) $(SGDK)/lib/libgcc.a -o $(OUT_DIR)/rom.out
-# $(CC) $(ARCH_FLAG) -n -Wl,--build-id=none -T $(SGDK)/md.ld -nostdlib $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD) -lgcc -o $(OUT_DIR)/rom.out
+	$(CC) $(ARCH_FLAG) -n -T $(SGDK)/md.ld -nostdlib $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD) $(SGDK)/lib/libgcc.a -o $(OUT_DIR)/rom.out -Wl,--gc-sections
+# $(CC) $(ARCH_FLAG) -n -T $(SGDK)/md.ld -nostdlib $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD) -lgcc -o $(OUT_DIR)/rom.out
 
 $(OUT_DIR)/sega.o: $(SRC_DIR)/boot/sega.s $(OUT_DIR)/rom_head.bin
 	$(CC) $(DEF_FLAGS_M68K) -c $(SRC_DIR)/boot/sega.s -o $@
@@ -174,16 +202,24 @@ $(OUT_DIR)/%.lst: %.c
 	$(CC) $(FLAGS) -c $< -o $@
 
 $(OUT_DIR)/%.o: %.c
-	$(CC) $(FLAGS) -c $< -o $@
+	$(CC) $(FLAGS) -MMD -c $< -o $@
 
 $(OUT_DIR)/%.o: %.s
-	$(CC) $(FLAGS) -c $< -o $@
+	$(CC) -x assembler-with-cpp $(FLAGS) -MMD -c $< -o $@
 
-%.s: %.res
-	@$(RESCOMP) $< $@
+$(OUT_DIR)/%.o: %.rs
+	$(CC) -x assembler-with-cpp $(FLAGS) -c $< -o $@
+	@cp $*.d $(OUT_DIR)/$*.d
+	@rm $*.d
+
+%.rs: %.res
+	@$(RESCOMP) $< $@ -dep $(OUT_DIR)/$*.o
+
+%.s: %.asm
+	$(MACCER) -o $@ $<
 
 %.o80: %.s80
-	@$(ASM_Z80) $(DEF_FLAGS_Z80) $< $@ out.lst
+	@$(ASM_Z80) $(DEF_FLAGS_Z80) --raw=$@ $<
 
 %.s: %.o80
 	@$(BINTOS) $<
