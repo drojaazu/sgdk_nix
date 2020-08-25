@@ -176,7 +176,7 @@ $(OUT_DIR)/$(BIN): $(OUT_DIR)/rom.out
 	@rm -f out/temp
 
 $(OUT_DIR)/symbols.txt: $(OUT_DIR)/rom.out
-	$(NM) --plugin=liblto_plugin.so -n $(OUT_DIR)/rom.out > $(OUT_DIR)/symbols.txt
+	$(NM) -n $(OUT_DIR)/rom.out > $(OUT_DIR)/symbols.txt
 
 # Please see readme file about linking libgcc in this section
 $(OUT_DIR)/rom.out: $(OUT_DIR)/sega.o $(OBJS) $(LIB_MD)
